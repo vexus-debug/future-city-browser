@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useRef, useState, type PointerEvent } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { ArrowDown, ArrowUp, Box, ChevronDown, Compass, Crosshair, Expand, Layers3, MapPin, Minus, Pause, Play, Plus, RotateCcw, Settings2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Box, ChevronDown, Compass, Crosshair, Expand, Layers3, MapPin, Minus, Pause, Play, Plus, RotateCcw, Settings2, Smartphone, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CityScene } from './CityScene';
 import { viewpoints, type NavigationInput } from './world';
@@ -43,19 +43,36 @@ export function CityExplorer() {
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) setMotion(false);
-    if (window.innerWidth < 640) setQuality(false);
+    if (window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 640) setQuality(false);
     const change = () => setFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener('fullscreenchange', change);
     return () => document.removeEventListener('fullscreenchange', change);
   }, []);
   const toggleFullscreen = async () => {
-    try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); } catch { setFullscreen(false); }
+    try {
+      if (document.fullscreenElement) {
+        screen.orientation?.unlock?.();
+        await document.exitFullscreen();
+      } else {
+        await document.documentElement.requestFullscreen();
+        const orientation = screen.orientation as ScreenOrientation & { lock?: (orientation: string) => Promise<void> };
+        if (window.matchMedia('(pointer: coarse)').matches) {
+          try { await orientation?.lock?.('landscape'); } catch { /* Manual rotation remains available where locking is unsupported. */ }
+        }
+      }
+    } catch { setFullscreen(Boolean(document.fullscreenElement)); }
   };
   const liftProps = (direction: number) => ({
     onPointerDown: (e: PointerEvent<HTMLButtonElement>) => { e.currentTarget.setPointerCapture(e.pointerId); input.current.lift = direction; },
     onPointerUp: () => { input.current.lift = 0; }, onPointerCancel: () => { input.current.lift = 0; }, onLostPointerCapture: () => { input.current.lift = 0; },
   });
   return <main className="city-explorer">
+    <section className="rotate-prompt" aria-label="Landscape orientation required">
+      <Smartphone size={48} strokeWidth={1.25} />
+      <h2>Turn to explore.</h2>
+      <p>Rotate your phone horizontally.</p>
+      <Button variant="outline" onClick={toggleFullscreen}><Expand /> Enter fullscreen</Button>
+    </section>
     <div className="city-canvas"><Canvas camera={{position:[170,108,235], fov:48, near:1, far:1600}} dpr={quality ? [1,1.5] : 1} gl={{antialias:true, powerPreference:'high-performance'}} onCreated={() => setReady(true)} fallback={<div className="canvas-fallback">Your browser does not support 3D. Try a browser with WebGL enabled.</div>}>
       <Suspense fallback={null}><CityScene input={input} preset={preset} reset={reset} tour={tour} motion={motion} quality={quality} onPosition={(x,z,altitude) => setPosition({x,z,altitude})} /></Suspense>
     </Canvas></div>
