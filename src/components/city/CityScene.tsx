@@ -63,7 +63,7 @@ function Skyways({ motion }: { motion: boolean }) {
     {roads.map((r, i) => <group key={i}>
       <mesh geometry={r.geometry}><meshStandardMaterial color={palette.ground} side={THREE.DoubleSide} roughness={0.42} metalness={0.7} /></mesh>
       {r.supportGeometry && <mesh geometry={r.supportGeometry}><meshStandardMaterial color={palette.metal} /></mesh>}
-      {r.edges.map((edge, j) => <mesh key={j}><tubeGeometry args={[edge, 140, 0.22, 4, false]} /><meshBasicMaterial color={i === 2 ? palette.amber : palette.cyan} toneMapped={false} /></mesh>)}
+      {r.edges.map((edge, j) => <mesh key={j}><tubeGeometry args={[edge, 140, 0.22, 4, false]} /><meshBasicMaterial color={i === 1 ? palette.cyan : palette.amber} toneMapped={false} /></mesh>)}
       <mesh><tubeGeometry args={[r.curve, 140, 0.055, 3, false]} /><meshBasicMaterial color={palette.white} /></mesh>
     </group>)}
     <instancedMesh ref={traffic} args={[undefined, undefined, 42]}><boxGeometry /><meshBasicMaterial color={palette.amber} toneMapped={false} /></instancedMesh>
@@ -100,6 +100,7 @@ function Navigation({ input, preset, reset, tour, motion, onPosition }: ScenePro
     if (x || y || lift || n.zoom) transitioning.current = false;
     if (transitioning.current) {
       const view = viewpoints[preset] ?? viewpoints[0], p = new THREE.Vector3(...view.position), target = new THREE.Vector3(...view.target);
+      if (camera instanceof THREE.PerspectiveCamera && camera.aspect < 0.8) p.sub(target).multiplyScalar(1.3).add(target);
       camera.position.lerp(p, 1 - Math.exp(-3 * dt)); c.target.lerp(target, 1 - Math.exp(-3 * dt));
       if (camera.position.distanceTo(p) < 0.1) transitioning.current = false;
     } else {
