@@ -20,7 +20,7 @@ function Pyramid() {
   const texture = useMemo(() => cityTexture('pyramid'), []);
   const ribs = useMemo(() => {
     const pos: number[] = [];
-    const corners = [[-58, -58], [58, -58], [58, 58], [-58, 58]];
+    const corners: [number, number][] = [[-58, -58], [58, -58], [58, 58], [-58, 58]];
     for (const [x,z] of corners) pos.push(x, 1, z, 0, 102, 0);
     for (let y = 5; y < 100; y += 6) {
       const s = 58 * (1 - y / 102);
@@ -51,6 +51,7 @@ function Skyways({ motion }: { motion: boolean }) {
     const mesh = traffic.current; if (!mesh) return;
     for (let i = 0; i < 42; i++) {
       const road = roads[i % 3], t = (i / 14 + time.current * (0.008 + (i % 4) * 0.002)) % 1;
+      if (!road) continue;
       const p = road.curve.getPointAt(t), tangent = road.curve.getTangentAt(t);
       dummy.position.copy(p).add(new THREE.Vector3(-tangent.z * 2, 1, tangent.x * 2));
       dummy.rotation.y = Math.atan2(tangent.x, tangent.z); dummy.scale.set(0.7, 0.35, 2.8); dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
@@ -98,7 +99,7 @@ function Navigation({ input, preset, reset, tour, motion, onPosition }: ScenePro
     const lift = n.lift + (k.has('KeyE') ? 1 : 0) - (k.has('KeyQ') ? 1 : 0);
     if (x || y || lift || n.zoom) transitioning.current = false;
     if (transitioning.current) {
-      const view = viewpoints[preset], p = new THREE.Vector3(...view.position), target = new THREE.Vector3(...view.target);
+      const view = viewpoints[preset] ?? viewpoints[0], p = new THREE.Vector3(...view.position), target = new THREE.Vector3(...view.target);
       camera.position.lerp(p, 1 - Math.exp(-3 * dt)); c.target.lerp(target, 1 - Math.exp(-3 * dt));
       if (camera.position.distanceTo(p) < 0.1) transitioning.current = false;
     } else {
